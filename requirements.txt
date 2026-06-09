@@ -1,5 +1,21 @@
 # HISN — Python Dependencies
-# Will be expanded in coming weeks
 
-# Week 1: placeholder
-python-dotenv>=1.0.0
+# DNS & Network
+dnspython>=2.6.0          # Pure Python DNS toolkit
+python-whois>=0.9.0       # WHOIS lookups in Python
+tldextract>=5.1.0         # Properly parse domain names
+
+# HTTP & APIs
+requests>=2.31.0          # The HTTP library
+httpx>=0.27.0             # Modern async HTTP client
+
+# CLI & Output
+rich>=13.7.0              # Beautiful terminal output (colors, tables, progress bars)
+typer>=0.12.0             # Modern CLI framework
+click>=8.1.0              # CLI building blocks
+
+# Configuration
+python-dotenv>=1.0.0      # Load secrets from .env files
+
+# Development
+pytest>=8.0.0             # Testing framework
