@@ -31,6 +31,8 @@ import tldextract
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from hisn.scanner.dns_utils import query_dns
+
 
 # Rich console object handles all our pretty colored output
 console = Console()
@@ -50,16 +52,11 @@ def validate_domain(domain: str) -> bool:
 # ---------------------------------------------------------------------------
 def get_whois_info(domain: str) -> dict:
     """
-    Query WHOIS registries to find out:
-      - Who registered the domain
-      - When it was created and expires
-      - Which nameservers it uses
-
-    Defensive: the python-whois library returns some fields as a string
-    OR a list depending on the registrar — we normalize both.
+    Query domain registration via RDAP (HTTPS replacement for port 43 WHOIS).
+    RDAP is the ICANN-standard modern replacement for WHOIS.
+    rdap.org is a free meta-service that routes to the correct RDAP server per TLD.
     """
     def to_list(value):
-        """Force a value to be a list, whether it starts as None, str, or list."""
         if value is None:
             return []
         if isinstance(value, str):
@@ -69,13 +66,55 @@ def get_whois_info(domain: str) -> dict:
         return [str(value)]
 
     try:
-        w = whois.whois(domain)
+        import requests
+        response = requests.get(
+            f"https://rdap.org/domain/{domain}",
+            timeout=15,
+            headers={"Accept": "application/rdap+json"},
+        )
+        if response.status_code != 200:
+            return {"Error": f"RDAP returned status {response.status_code}"}
+
+        data = response.json()
+
+        # --- Registrar (lives inside entities[].vcardArray) ---
+        registrar = "Unknown"
+        for entity in data.get("entities", []):
+            if "registrar" in entity.get("roles", []):
+                vcards = entity.get("vcardArray", [None, []])[1]
+                for vcard in vcards:
+                    if len(vcard) >= 4 and vcard[0] == "fn":
+                        registrar = vcard[3]
+                        break
+                break
+
+        # --- Dates (from events array) ---
+        creation_date = "Unknown"
+        expiration_date = "Unknown"
+        for event in data.get("events", []):
+            action = event.get("eventAction", "")
+            date = event.get("eventDate", "")
+            if action == "registration":
+                creation_date = date
+            elif action == "expiration":
+                expiration_date = date
+
+        # --- Nameservers ---
+        name_servers = [
+            ns.get("ldhName", "").lower()
+            for ns in data.get("nameservers", [])
+            if ns.get("ldhName")
+        ]
+
+        # --- Status codes ---
+        statuses = to_list(data.get("status"))
+
         return {
-            "Registrar": w.registrar or "Unknown",
-            "Creation Date": str(w.creation_date) if w.creation_date else "Unknown",
-            "Expiration Date": str(w.expiration_date) if w.expiration_date else "Unknown",
-            "Name Servers": ", ".join(to_list(w.name_servers)) or "Unknown",
-            "Status": "\n".join(to_list(w.status)) or "Unknown",
+            "Registrar": registrar,
+            "Creation Date": creation_date,
+            "Expiration Date": expiration_date,
+            "Name Servers": ", ".join(name_servers) if name_servers else "Unknown",
+            "Status": "\n".join(statuses) if statuses else "Unknown",
         }
     except Exception as e:
         return {"Error": str(e)}
@@ -85,36 +124,19 @@ def get_whois_info(domain: str) -> dict:
 # ---------------------------------------------------------------------------
 def get_dns_records(domain: str) -> dict:
     """
-    Query DNS for all common record types.
+    Get DNS records of all common types via DoH.
       A     = IPv4 address
       AAAA  = IPv6 address
       MX    = Mail server
       NS    = Name server
-      TXT   = Free-form text (often holds SPF/DKIM/DMARC = email security!)
-      CNAME = Alias to another domain
-      SOA   = Start of Authority (zone administrative info)
-
-    TXT records are especially valuable — they reveal whether the
-    domain is protected against email spoofing.
+      TXT   = Free-form text (SPF/DKIM/DMARC live here!)
+      CNAME = Alias
+      SOA   = Start of Authority
     """
     records = {}
     record_types = ["A", "AAAA", "MX", "NS", "TXT", "CNAME", "SOA"]
-
-    resolver = dns.resolver.Resolver()
-    resolver.timeout = 5
-    resolver.lifetime = 5
-
     for record_type in record_types:
-        try:
-            answers = resolver.resolve(domain, record_type)
-            records[record_type] = [str(rdata) for rdata in answers]
-        except dns.resolver.NoAnswer:
-            records[record_type] = []
-        except dns.resolver.NXDOMAIN:
-            records[record_type] = ["[DOMAIN NOT FOUND]"]
-        except Exception:
-            records[record_type] = []
-
+        records[record_type] = query_dns(domain, record_type)
     return records
 
 
