@@ -58,18 +58,27 @@ def get_whois_info(domain: str) -> dict:
     This is OSINT gold — attackers use it to find admin emails,
     detect expiring domains they can hijack, and map organizations.
     """
+    def fmt(value):
+        """Safely format a WHOIS field that may be None, a string, or a list."""
+        if value is None:
+            return "Unknown"
+        if isinstance(value, list):
+            # Deduplicate and join — WHOIS lists often have duplicates
+            unique = list(dict.fromkeys(str(v) for v in value))
+            return ", ".join(unique)
+        return str(value)
+
     try:
         w = whois.whois(domain)
         return {
-            "Registrar": w.registrar or "Unknown",
-            "Creation Date": str(w.creation_date) if w.creation_date else "Unknown",
-            "Expiration Date": str(w.expiration_date) if w.expiration_date else "Unknown",
-            "Name Servers": ", ".join(w.name_servers) if w.name_servers else "Unknown",
-            "Status": ", ".join(w.status) if w.status else "Unknown",
+            "Registrar": fmt(w.registrar),
+            "Creation Date": fmt(w.creation_date),
+            "Expiration Date": fmt(w.expiration_date),
+            "Name Servers": fmt(w.name_servers),
+            "Status": fmt(w.status),
         }
     except Exception as e:
         return {"Error": str(e)}
-
 
 # ---------------------------------------------------------------------------
 # DNS record lookup
