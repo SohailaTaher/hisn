@@ -67,7 +67,7 @@ A small business owner enters their company domain (e.g. `my-pharmacy.com`) — 
 ## 🏗️ High-Level Architecture
 
 ┌──────────────┐      ┌──────────────┐      ┌────────────────────┐
-│  React UI    │─────▶│  FastAPI    │─────▶│  Scanner Engine    
+│  React UI    │─────▶│  FastAPI     │─────▶│  Scanner Engine    │
 │  (Dashboard) │      │  Backend     │      │  (Python)          │
 └──────────────┘      └──────┬───────┘      └────────┬───────────┘
 │                       │
@@ -76,8 +76,8 @@ A small business owner enters their company domain (e.g. `my-pharmacy.com`) — 
 │ PostgreSQL  │         │  Nmap · Nuclei   │
 │ (Results)   │         │  Subfinder       │
 └─────────────┘         │  testssl · WPScan│
-                        │  External APIs   │
-                        └──────────────────┘
+│  External APIs   │
+└──────────────────┘
 
 📐 *Detailed architecture diagram coming in [`docs/architecture.md`](docs/architecture.md).*
 
