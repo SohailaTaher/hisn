@@ -1,0 +1,5 @@
+# HISN — Python Dependencies
+# Will be expanded in coming weeks
+
+# Week 1: placeholder
+python-dotenv>=1.0.0
