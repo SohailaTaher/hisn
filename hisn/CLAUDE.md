@@ -64,14 +64,18 @@ These are **real production constraints** for the target market and have already
 
 ## Current work-in-progress
 
-**Integrating Nuclei v3.3.7 as the 5th scanner module.**
+**Week 4 complete.** All 5 scanner modules functional:
+- Recon ✅
+- Email security ✅
+- Port scanning ✅
+- TLS/SSL audit ✅
+- Vulnerability scanning (Nuclei v3.3.7) ✅
 
-- Nuclei CLI executes but currently returns **zero findings**.
-- Hypothesis: the test targets being scanned don't trigger any of the loaded templates — i.e. it's a target/wiring issue, not Nuclei itself.
-- Next step: bring up **DVWA** or **OWASP Juice Shop** in Docker on WSL2, run Nuclei against it from the CLI to confirm it produces hits, *then* debug the module's subprocess invocation and output parsing.
-- Once green: write pytest coverage following the pattern of existing scanner tests.
+Verified against OWASP Juice Shop in Docker — Nuclei detects real findings, scanner module integration confirmed end-to-end.
 
-**Update this section** when the Nuclei module lands, and replace it with the next in-flight task.
+**Known refinement for later:** scoring rubric weighs `info` findings at 0, which produces an "A" grade for visibly leaky targets (e.g. 22 info findings + 1 medium = grade A on Juice Shop). Either give info findings a small weight, or promote `http-missing-security-headers:*` from info → low. Defer until week 5+ when we have more real-target data.
+
+**Next up: Week 5 — backend spine (FastAPI + Celery + Redis + SQLite). See `docs/week-5-plan.md`.**
 
 ---
 
