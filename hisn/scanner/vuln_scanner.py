@@ -237,7 +237,7 @@ def run_vuln_scan(domain: str):
 
     with Progress(SpinnerColumn(), TextColumn("{task.description}"), transient=True) as p:
         p.add_task("Running Nuclei (this may take 2-10 minutes)...", total=None)
-        findings = run_nuclei_scan(domain)
+        findings = run_nuclei_scan(target_url)
 
     by_severity = categorize_findings(findings)
 
