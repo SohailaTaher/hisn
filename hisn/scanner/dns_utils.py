@@ -27,6 +27,14 @@ DOH_ENDPOINTS = [
     },
 ]
 
+# DNS record type numbers (per RFC 1035 + extensions).
+# We use these to filter the response — JSON DoH returns the entire
+# CNAME chain when resolving, so without this filter we'd treat
+# intermediate CNAMEs as if they were the final A record.
+RECORD_TYPES = {
+    "A": 1, "NS": 2, "CNAME": 5, "SOA": 6, "PTR": 12,
+    "MX": 15, "TXT": 16, "AAAA": 28,
+}
 
 def _parse_txt(value: str) -> str:
     """
@@ -70,7 +78,12 @@ def query_dns(domain: str, record_type: str) -> list:
                 return []
 
             results = []
+            expected_type = RECORD_TYPES.get(rtype, 0)
             for answer in data.get("Answer", []):
+                # Skip records that aren't the type we asked for
+                # (e.g. CNAMEs returned during A-record resolution)
+                if expected_type and answer.get("type") != expected_type:
+                    continue
                 value = answer.get("data", "")
                 if rtype == "TXT":
                     value = _parse_txt(value)
