@@ -31,6 +31,8 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
+from hisn.scanner.dns_utils import query_dns
+
 console = Console()
 
 
@@ -56,11 +58,31 @@ def fetch_certificate_info(domain: str, port: int = 443, timeout: int = 10) -> d
         "error": None,
     }
 
+# Resolve IP via DoH first — the system DNS resolver may not work in all
+    # environments (WSL2, restrictive networks). Also, many domains don't have
+    # apex A records (only www.) so we fall back to "www." automatically.
+    candidates = [domain]
+    if not domain.startswith("www."):
+        candidates.append(f"www.{domain}")
+
+    target_ip = None
+    resolved_hostname = domain
+    for candidate in candidates:
+        ips = query_dns(candidate, "A") or query_dns(candidate, "AAAA")
+        if ips:
+            target_ip = ips[0]
+            resolved_hostname = candidate
+            break
+
+    if not target_ip:
+        result["error"] = "DNS resolution failed (no A/AAAA on apex or www.)"
+        return result
+
     context = ssl.create_default_context()
 
     try:
-        with socket.create_connection((domain, port), timeout=timeout) as sock:
-            with context.wrap_socket(sock, server_hostname=domain) as ssock:
+        with socket.create_connection((target_ip, port), timeout=timeout) as sock:
+            with context.wrap_socket(sock, server_hostname=resolved_hostname) as ssock:
                 cert = ssock.getpeercert()
                 result["tls_version"] = ssock.version()
                 cipher_info = ssock.cipher()
