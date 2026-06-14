@@ -18,7 +18,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from hisn.api.db import create_db_and_tables
-
+from hisn.api.routers import scans
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +34,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(scans.router)
 
 @app.get("/health", tags=["meta"])
 def health() -> dict:
