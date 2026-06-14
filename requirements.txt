@@ -19,3 +19,15 @@ python-dotenv>=1.0.0      # Load secrets from .env files
 
 # Development
 pytest>=8.0.0             # Testing framework
+
+
+# Web framework (added Week 5)
+fastapi>=0.115.0           # API framework
+uvicorn[standard]>=0.32.0  # ASGI server with autoreload + websockets
+
+# Database (added Week 5)
+sqlmodel>=0.0.22           # ORM — Pydantic + SQLAlchemy in one
+
+# Async task queue (added Week 5)
+celery>=5.4.0              # Background task queue (used Day 2+)
+redis>=5.2.0               # Celery broker + result backend (used Day 2+)
