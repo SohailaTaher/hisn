@@ -64,20 +64,16 @@ These are **real production constraints** for the target market and have already
 
 ## Current work-in-progress
 
-**Week 4 complete.** All 5 scanner modules functional:
-- Recon ✅
-- Email security ✅
-- Port scanning ✅
-- TLS/SSL audit ✅
-- Vulnerability scanning (Nuclei v3.3.7) ✅
+**Week 5 complete (v0.5.1).** Full backend spine working end-to-end:
+- FastAPI app with 4 endpoints (POST /scans, GET /scans, GET /scans/{id}, GET /scans/{id}/findings)
+- SQLite + SQLModel for persistence (Target, Scan, Finding)
+- Celery + Redis for async task execution
+- Orchestrator normalizes all 5 scanner outputs into unified Finding shape
+- 7 integration tests passing
 
-Verified against OWASP Juice Shop in Docker — Nuclei detects real findings, scanner module integration confirmed end-to-end.
+**Next up: Week 6 — React frontend + PDF reports.**
 
-**Known refinement for later:** scoring rubric weighs `info` findings at 0, which produces an "A" grade for visibly leaky targets (e.g. 22 info findings + 1 medium = grade A on Juice Shop). Either give info findings a small weight, or promote `http-missing-security-headers:*` from info → low. Defer until week 5+ when we have more real-target data.
-
-**Next up: Week 5 — backend spine (FastAPI + Celery + Redis + SQLite). See `docs/week-5-plan.md`.**
-
----
+The frontend will consume the existing API. Three minimum pages: targets list, scan detail view (with severity-grouped findings table), trigger-new-scan form. Then add PDF report generation as a download endpoint on the scan detail page.
 
 ## What to do when starting a task
 
