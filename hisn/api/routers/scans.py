@@ -6,6 +6,11 @@ HTTP endpoints for triggering and inspecting scans.
 Author: Sohaila Taher Shaker
 License: MIT
 """
+from datetime import datetime, timezone
+from pathlib import Path
+from fastapi import Response
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from weasyprint import HTML
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
@@ -96,6 +101,53 @@ def get_scan(
     _ = scan.target
     _ = scan.findings
     return scan
+
+
+
+# Set up Jinja2 once at module load (cheap, reusable)
+_TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
+_jinja_env = Environment(
+    loader=FileSystemLoader(_TEMPLATES_DIR),
+    autoescape=select_autoescape(["html"]),
+)
+
+
+@router.get("/{scan_id}/report.pdf")
+def get_scan_pdf(scan_id: int, session: Session = Depends(get_session)):
+    """Generate and return a PDF report for a scan."""
+    scan = session.get(Scan, scan_id)
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    # Force lazy-load relationships
+    _ = scan.target
+    _ = scan.findings
+
+    # Group findings by severity for the template
+    findings_by_severity = {}
+    for f in scan.findings:
+        findings_by_severity.setdefault(f.severity, []).append(f)
+
+    # Render template → HTML string
+    template = _jinja_env.get_template("report.html")
+    html_content = template.render(
+        scan=scan,
+        findings_by_severity=findings_by_severity,
+        generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+    )
+
+    # Render HTML → PDF bytes
+    pdf_bytes = HTML(string=html_content).write_pdf()
+
+    # Return as a downloadable PDF
+    filename = f"hisn-report-{scan.target.domain}-{scan.id}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
 
 
 @router.get(

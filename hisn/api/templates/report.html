@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>HISN Report - {{ scan.target.domain }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2cm;
+      @bottom-center {
+        content: "HISN Security Report — Page " counter(page) " of " counter(pages);
+        font-size: 9pt;
+        color: #6b7280;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1f2937;
+      line-height: 1.5;
+      font-size: 10pt;
+    }
+
+    h1, h2, h3 { color: #111827; margin-top: 0; }
+
+    /* ============ COVER PAGE ============ */
+    .cover {
+      page-break-after: always;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+      padding: 4cm 0;
+    }
+    .cover .brand {
+      font-size: 14pt;
+      color: #2563eb;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 1cm;
+    }
+    .cover h1 {
+      font-size: 36pt;
+      margin: 0 0 0.3cm;
+    }
+    .cover .domain {
+      font-size: 22pt;
+      color: #4b5563;
+      margin-bottom: 2cm;
+      font-family: "Courier New", monospace;
+    }
+    .cover .grade-box {
+      display: inline-block;
+      padding: 1cm 2cm;
+      border: 3px solid #e5e7eb;
+      border-radius: 12px;
+      margin-bottom: 1cm;
+    }
+    .cover .grade {
+      font-size: 60pt;
+      font-weight: bold;
+      line-height: 1;
+    }
+    .grade-A { color: #16a34a; }
+    .grade-B { color: #65a30d; }
+    .grade-C { color: #ca8a04; }
+    .grade-D { color: #ea580c; }
+    .grade-F { color: #dc2626; }
+    .grade-NA { color: #9ca3af; }
+
+    .cover .score {
+      font-size: 18pt;
+      color: #6b7280;
+      margin-top: 0.5cm;
+    }
+    .cover .meta {
+      margin-top: 2cm;
+      font-size: 10pt;
+      color: #6b7280;
+    }
+
+    /* ============ SECTIONS ============ */
+    section { page-break-inside: avoid; margin-bottom: 1cm; }
+    h2 {
+      font-size: 16pt;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.2cm;
+      margin-bottom: 0.5cm;
+    }
+
+    /* ============ SUMMARY TABLE ============ */
+    .summary-grid {
+      display: table;
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.5cm 0;
+    }
+    .summary-grid .row {
+      display: table-row;
+    }
+    .summary-grid .cell {
+      display: table-cell;
+      padding: 0.3cm 0.5cm;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+    }
+    .summary-grid .label {
+      width: 40%;
+      color: #6b7280;
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .summary-grid .value {
+      font-weight: 600;
+    }
+
+    /* ============ FINDINGS ============ */
+    .severity-section {
+      margin-bottom: 0.8cm;
+      page-break-inside: avoid;
+    }
+    .severity-header {
+      display: flex;
+      align-items: center;
+      gap: 0.3cm;
+      margin-bottom: 0.3cm;
+    }
+    .severity-badge {
+      display: inline-block;
+      padding: 0.1cm 0.3cm;
+      border-radius: 3px;
+      font-size: 9pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .sev-critical { background: #fee2e2; color: #991b1b; }
+    .sev-high     { background: #ffedd5; color: #9a3412; }
+    .sev-medium   { background: #fef3c7; color: #854d0e; }
+    .sev-low      { background: #dbeafe; color: #1e40af; }
+    .sev-info     { background: #f3f4f6; color: #374151; }
+    .sev-unknown  { background: #f3f4f6; color: #374151; }
+
+    .finding {
+      background: #f9fafb;
+      border-left: 3px solid #d1d5db;
+      padding: 0.4cm 0.5cm;
+      margin-bottom: 0.3cm;
+      page-break-inside: avoid;
+    }
+    .finding.crit { border-left-color: #dc2626; }
+    .finding.high { border-left-color: #ea580c; }
+    .finding.med  { border-left-color: #ca8a04; }
+    .finding.low  { border-left-color: #2563eb; }
+    .finding.info { border-left-color: #9ca3af; }
+
+    .finding-title {
+      font-weight: 600;
+      font-size: 11pt;
+      margin-bottom: 0.2cm;
+    }
+    .finding-meta {
+      font-size: 9pt;
+      color: #6b7280;
+      font-family: "Courier New", monospace;
+      margin-bottom: 0.2cm;
+    }
+    .finding-desc {
+      font-size: 10pt;
+      color: #4b5563;
+    }
+
+    .footer {
+      margin-top: 1.5cm;
+      padding-top: 0.5cm;
+      border-top: 1px solid #e5e7eb;
+      font-size: 9pt;
+      color: #9ca3af;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =============================== COVER =============================== -->
+  <div class="cover">
+    <div class="brand">HISN — حصن</div>
+    <h1>Security Report</h1>
+    <div class="domain">{{ scan.target.domain }}</div>
+
+    <div class="grade-box">
+      <div class="grade grade-{{ scan.overall_grade or 'NA' }}">
+        {{ scan.overall_grade or '—' }}
+      </div>
+      <div class="score">{{ scan.overall_score if scan.overall_score is not none else '—' }}/100</div>
+    </div>
+
+    <div class="meta">
+      Scan #{{ scan.id }} · {{ generated_at }}
+    </div>
+  </div>
+
+  <!-- =============================== SUMMARY =============================== -->
+  <section>
+    <h2>Executive Summary</h2>
+    <p>
+      This report presents the results of an external attack surface assessment
+      performed against <strong>{{ scan.target.domain }}</strong>. The assessment was
+      conducted from publicly observable information only — no authenticated access,
+      no intrusive scanning. {{ scan.findings|length }} findings were recorded across
+      reconnaissance, TLS, DNS, email security, port exposure, and vulnerability scanning.
+    </p>
+
+    <div class="summary-grid">
+      <div class="row">
+        <div class="cell label">Target</div>
+        <div class="cell value">{{ scan.target.domain }}</div>
+      </div>
+      <div class="row">
+        <div class="cell label">Overall Grade</div>
+        <div class="cell value">{{ scan.overall_grade or '—' }} ({{ scan.overall_score if scan.overall_score is not none else '—' }}/100)</div>
+      </div>
+      <div class="row">
+        <div class="cell label">Status</div>
+        <div class="cell value">{{ scan.status }}</div>
+      </div>
+      <div class="row">
+        <div class="cell label">Started</div>
+        <div class="cell value">{{ scan.started_at.strftime("%Y-%m-%d %H:%M UTC") if scan.started_at else '—' }}</div>
+      </div>
+      <div class="row">
+        <div class="cell label">Finished</div>
+        <div class="cell value">{{ scan.finished_at.strftime("%Y-%m-%d %H:%M UTC") if scan.finished_at else '—' }}</div>
+      </div>
+      <div class="row">
+        <div class="cell label">Total Findings</div>
+        <div class="cell value">{{ scan.findings|length }}</div>
+      </div>
+      {% for sev in ['critical', 'high', 'medium', 'low', 'info'] %}
+        {% set count = findings_by_severity.get(sev, [])|length %}
+        {% if count > 0 %}
+        <div class="row">
+          <div class="cell label">{{ sev|title }}</div>
+          <div class="cell value">{{ count }}</div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- =============================== FINDINGS =============================== -->
+  <section>
+    <h2>Detailed Findings</h2>
+
+    {% if scan.findings|length == 0 %}
+      <p><em>No findings recorded for this scan.</em></p>
+    {% else %}
+      {% for sev in ['critical', 'high', 'medium', 'low', 'info', 'unknown'] %}
+        {% set items = findings_by_severity.get(sev, []) %}
+        {% if items %}
+          <div class="severity-section">
+            <div class="severity-header">
+              <span class="severity-badge sev-{{ sev }}">{{ sev }}</span>
+              <span style="color: #6b7280; font-size: 10pt;">{{ items|length }} finding{{ 's' if items|length != 1 else '' }}</span>
+            </div>
+            {% for f in items %}
+              <div class="finding {{ {'critical':'crit','high':'high','medium':'med','low':'low','info':'info','unknown':'info'}[sev] }}">
+                <div class="finding-title">{{ f.title }}</div>
+                <div class="finding-meta">scanner: {{ f.scanner_name }}</div>
+                {% if f.description %}
+                  <div class="finding-desc">{{ f.description }}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  </section>
+
+  <div class="footer">
+    Generated by HISN — External Attack Surface Management for SMBs ·
+    This assessment is based on publicly available information only.
+  </div>
+
+</body>
+</html>

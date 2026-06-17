@@ -29,3 +29,7 @@ export function createScan({ domain, name }) {
     body: JSON.stringify({ domain, name }),
   })
 }
+
+export function getPdfReportUrl(scanId) {
+  return `${BASE_URL}/scans/${scanId}/report.pdf`
+}
