@@ -77,12 +77,12 @@ function ScanDetail() {
   if (loading) {
     return <div className="p-8 text-gray-600">Loading scan details...</div>
   }
-  if (error && !scan) {
+if (error && !scan) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <>
         <Link to="/" className="text-blue-600 hover:underline mb-4 inline-block">← Back to scans</Link>
         <div className="text-red-600">Error: {error}</div>
-      </div>
+      </>
     )
   }
 

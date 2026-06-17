@@ -30,7 +30,7 @@ function NewScan() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <>
       <Link to="/" className="text-blue-600 hover:underline mb-4 inline-block">
         ← Back to scans
       </Link>
@@ -99,7 +99,7 @@ function NewScan() {
           </div>
         </form>
       </div>
-    </div>
+    </>
   )
 }
 
