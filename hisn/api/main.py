@@ -18,7 +18,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from hisn.api.db import create_db_and_tables
-from hisn.api.routers import scans
+from hisn.api.routers import auth, scans
 from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
@@ -47,7 +47,7 @@ app.add_middleware(
 )
 
 app.include_router(scans.router)
-
+app.include_router(auth.router)
 @app.get("/health", tags=["meta"])
 def health() -> dict:
     """Liveness probe — used for deployment health checks and uptime monitoring."""

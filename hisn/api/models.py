@@ -38,7 +38,14 @@ class Target(SQLModel, table=True):
 
     scans: list["Scan"] = Relationship(back_populates="target")
 
-
+class User(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    email: str = Field(unique=True, index=True)
+    hashed_password: str
+    full_name: str | None = None
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
 class Scan(SQLModel, table=True):
     """A single scan run against a Target."""
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -75,3 +82,5 @@ class Finding(SQLModel, table=True):
     raw_data: Optional[dict] = Field(default=None, sa_column=Column(JSON))
 
     scan: Optional[Scan] = Relationship(back_populates="findings")
+
+    
