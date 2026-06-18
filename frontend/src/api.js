@@ -2,7 +2,7 @@
 
 import { getToken, clearToken } from './auth'
 
-const BASE_URL = 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 async function request(path, options = {}) {
   const headers = {
@@ -59,8 +59,33 @@ export function createScan({ domain, name }) {
   })
 }
 
-export function getPdfReportUrl(scanId) {
-  return `${BASE_URL}/scans/${scanId}/report.pdf`
+export async function downloadPdfReport(scanId) {
+  const token = getToken()
+  if (!token) throw new Error('Not authenticated')
+
+  const response = await fetch(`${BASE_URL}/scans/${scanId}/report.pdf`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearToken()
+      throw new Error('Session expired — please log in again')
+    }
+    throw new Error(`Failed to download report (${response.status})`)
+  }
+
+  // Convert response to a blob, create a temp URL, click a hidden link
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `hisn-report-${scanId}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  // Free the blob URL once the download has kicked off
+  setTimeout(() => URL.revokeObjectURL(url), 100)
 }
 
 // --- Auth endpoints ---

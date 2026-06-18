@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getScan, getPdfReportUrl } from '../api'
+import { getScan, downloadPdfReport } from '../api'
 
 const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low', 'info', 'unknown']
 
@@ -101,14 +101,12 @@ if (error && !scan) {
         <Link to="/" className="text-blue-600 hover:underline">
           ← Back to scans
         </Link>
-        <a
-          href={getPdfReportUrl(scanId)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition-colors text-sm"
+        <button
+          onClick={() => downloadPdfReport(scanId).catch(err => alert(err.message))}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition-colors text-sm cursor-pointer"
         >
           ↓ Download PDF
-        </a>
+        </button>
       </div>
 
       {/* Header card */}

@@ -13,7 +13,7 @@ Interactive API docs:
 Author: Sohaila Taher Shaker
 License: MIT
 """
-
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
@@ -35,12 +35,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Comma-separated list of allowed origins from CORS_ORIGINS env var,
+# falling back to localhost for dev
+_default_origins = "http://localhost:5173,http://127.0.0.1:5173"
+allowed_origins = [
+    o.strip() for o in os.environ.get("CORS_ORIGINS", _default_origins).split(",") if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],   # Vite dev server
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
