@@ -1,18 +1,60 @@
-# HISN — Local development services
-# Brings up Redis as Celery broker + result backend.
-# Start:   docker compose up -d
-# Stop:    docker compose down
-# Status:  docker compose ps
-
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hisn
+      POSTGRES_PASSWORD: hisn_dev_password
+      POSTGRES_DB: hisn
+    ports:
+      - "5432:5432"
+    volumes:
+      - hisn_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hisn"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
-    container_name: hisn-redis
     ports:
       - "6379:6379"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
+
+  api:
+    build: .
+    image: hisn:latest
+    environment:
+      DATABASE_URL: postgresql://hisn:hisn_dev_password@postgres:5432/hisn
+      REDIS_URL: redis://redis:6379
+      HISN_SECRET_KEY: docker-compose-dev-only-not-for-real-production
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    command: uvicorn hisn.api.main:app --host 0.0.0.0 --port 8000
+
+  worker:
+    image: hisn:latest
+    environment:
+      DATABASE_URL: postgresql://hisn:hisn_dev_password@postgres:5432/hisn
+      REDIS_URL: redis://redis:6379
+      HISN_SECRET_KEY: docker-compose-dev-only-not-for-real-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      api:
+        condition: service_started
+    restart: unless-stopped
+    command: celery -A hisn.api.worker worker --loglevel=info
+
+volumes:
+  hisn_postgres_data:

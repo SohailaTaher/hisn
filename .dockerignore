@@ -1,0 +1,41 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv
+venv
+*.egg-info
+
+# Local databases (we use Postgres in the container)
+hisn.db
+*.sqlite
+*.sqlite3
+
+# Frontend (separate deploy via Vercel)
+frontend
+
+# Tests, docs, dev tooling
+.pytest_cache
+.git
+.gitignore
+.vscode
+.idea
+*.log
+
+# Env files (secrets injected via env vars at runtime, not baked in)
+.env
+.env.*
+!.env.example
+
+# Docker artifacts
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Misc
+README.md
+LICENSE
+docs
+.DS_Store
