@@ -15,7 +15,8 @@ from weasyprint import HTML
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlmodel import Session, select
-
+from hisn.api.auth import get_current_user
+from hisn.api.models import User  # if not already imported
 from hisn.api.db import get_session
 from hisn.api.models import Target, Scan, Finding
 from hisn.api.schemas import (
@@ -37,6 +38,7 @@ router = APIRouter(prefix="/scans", tags=["scans"])
 def create_scan(
     payload: ScanCreate,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Create or reuse a Target for the domain, create a new Scan record,
     enqueue the Celery task, return the new scan immediately (status=pending).
@@ -54,7 +56,9 @@ def create_scan(
         session.refresh(target)
 
     # Create Scan
-    scan = Scan(target_id=target.id)
+    scan = Scan(target_id=target.id,
+    user_id=current_user.id,
+    status="pending",)
     session.add(scan)
     session.commit()
     session.refresh(scan)
@@ -65,24 +69,28 @@ def create_scan(
     return scan
 
 
-@router.get(
-    "",
-    response_model=ScanList,
-    summary="List scans (newest first)",
-)
+@router.get("", response_model=ScanList)
 def list_scans(
-    limit: int = Query(50, ge=1, le=100),
-    offset: int = Query(0, ge=0),
+    limit: int = 50,
+    offset: int = 0,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),   # 👈 NEW
 ):
-    """Paginated list. Default page size 50, max 100."""
-    total = session.scalar(select(func.count()).select_from(Scan)) or 0
-    scans = session.exec(
-        select(Scan).order_by(Scan.started_at.desc()).limit(limit).offset(offset)
-    ).all()
+    statement = (
+        select(Scan)
+        .where(Scan.user_id == current_user.id)       # 👈 NEW
+        .order_by(Scan.started_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    scans = session.exec(statement).all()
+    
+    total = session.exec(
+        select(func.count(Scan.id)).where(Scan.user_id == current_user.id)   # 👈 NEW
+    ).one()
+    
     return ScanList(total=total, scans=scans)
-
-
+    
 @router.get(
     "/{scan_id}",
     response_model=ScanWithFindings,
@@ -91,10 +99,11 @@ def list_scans(
 def get_scan(
     scan_id: int,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Returns the full scan: status, score, grade, target info, all findings."""
     scan = session.get(Scan, scan_id)
-    if scan is None:
+    if not scan or scan.user_id != current_user.id:
         raise HTTPException(status_code=404, detail=f"Scan {scan_id} not found")
 
     # Trigger lazy loading of relationships while session is still active
@@ -113,10 +122,14 @@ _jinja_env = Environment(
 
 
 @router.get("/{scan_id}/report.pdf")
-def get_scan_pdf(scan_id: int, session: Session = Depends(get_session)):
+def get_scan_pdf(
+    scan_id: int, 
+    session: Session = Depends(get_session), 
+    current_user: User = Depends(get_current_user),
+):
     """Generate and return a PDF report for a scan."""
     scan = session.get(Scan, scan_id)
-    if not scan:
+    if not scan or scan.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Scan not found")
 
     # Force lazy-load relationships
@@ -162,10 +175,12 @@ def get_scan_findings(
         description="Filter by severity: critical|high|medium|low|info|unknown",
     ),
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Findings list — optionally filtered by severity."""
-    if session.get(Scan, scan_id) is None:
-        raise HTTPException(status_code=404, detail=f"Scan {scan_id} not found")
+    scan = session.get(Scan, scan_id)
+    if not scan or scan.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Scan not found")
 
     query = select(Finding).where(Finding.scan_id == scan_id)
     if severity:

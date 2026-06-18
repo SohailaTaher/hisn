@@ -63,7 +63,7 @@ class Scan(SQLModel, table=True):
 
     target: Optional[Target] = Relationship(back_populates="scans")
     findings: list["Finding"] = Relationship(back_populates="scan")
-
+    user_id: int | None = Field(default=None, foreign_key="user.id", index=True)
 
 class Finding(SQLModel, table=True):
     """An individual issue surfaced by a scanner module."""

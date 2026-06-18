@@ -2,11 +2,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
-
-from hisn.api.auth import create_access_token, hash_password, verify_password
 from hisn.api.db import get_session
 from hisn.api.models import User
 from hisn.api.schemas import Token, UserCreate, UserRead
+from hisn.api.auth import create_access_token, hash_password, verify_password, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -58,3 +57,9 @@ def login(
         )
     token = create_access_token(user.id)
     return Token(access_token=token)
+
+
+@router.get("/me", response_model=UserRead)
+def get_me(current_user: User = Depends(get_current_user)):
+    """Return the currently authenticated user."""
+    return current_user
