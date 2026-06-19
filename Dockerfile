@@ -32,4 +32,4 @@ COPY . .
 
 # Default command — docker-compose overrides for the worker
 EXPOSE 8000
-CMD ["uvicorn", "hisn.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["honcho", "start"]
